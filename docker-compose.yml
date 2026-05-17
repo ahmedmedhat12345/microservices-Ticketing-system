@@ -1,0 +1,39 @@
+
+services:
+  ticket-service:
+    build: ./ticket_service
+    ports:
+      - "5000:5000"
+    volumes:
+      - ticket_data:/data
+
+  support-service:
+    build: ./support_service
+    ports:
+      - "5001:5001"
+    volumes:
+      - support_data:/data
+    depends_on:
+      - ticket-service
+      - reporting-service
+      - notification-service
+
+  reporting-service:
+    build: ./reporting_service
+    ports:
+      - "5002:5002"
+    volumes:
+      - reporting_data:/data
+
+  notification-service:
+    build: ./notification_service
+    ports:
+      - "5003:5003"
+    volumes:
+      - notification_data:/data
+
+volumes:
+  ticket_data:
+  support_data:
+  reporting_data:
+  notification_data:

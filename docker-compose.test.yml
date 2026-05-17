@@ -1,0 +1,57 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3001:80"
+    environment:
+      - ENV=testing
+      - TICKET_URL=http://localhost:5010
+      - SUPPORT_URL=http://localhost:5011
+      - REPORTING_URL=http://localhost:5012
+      - NOTIFICATION_URL=http://localhost:5013
+
+  ticket-service:
+    build: ./ticket_service
+    ports:
+      - "5010:5000"
+    environment:
+      - ENV=testing
+    volumes:
+      - ticket_data_test:/data
+
+  support-service:
+    build: ./support_service
+    ports:
+      - "5011:5001"
+    environment:
+      - ENV=testing
+    volumes:
+      - support_data_test:/data
+    depends_on:
+      - ticket-service
+      - reporting-service
+      - notification-service
+
+  reporting-service:
+    build: ./reporting_service
+    ports:
+      - "5012:5002"
+    environment:
+      - ENV=testing
+    volumes:
+      - reporting_data_test:/data
+
+  notification-service:
+    build: ./notification_service
+    ports:
+      - "5013:5003"
+    environment:
+      - ENV=testing
+    volumes:
+      - notification_data_test:/data
+
+volumes:
+  ticket_data_test:
+  support_data_test:
+  reporting_data_test:
+  notification_data_test:

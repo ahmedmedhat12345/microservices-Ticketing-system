@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Support Ticketing System</title>
+  <style>
+    :root {
+      --bg: #f4f4f9;
+      --card: #ffffff;
+      --text: #333333;
+      --muted: #666666;
+      --primary: #2c3e50;
+      --accent: #3498db;
+      --success: #2ecc71;
+      --warning: #f39c12;
+      --danger: #e74c3c;
+      --radius: 8px;
+    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+    .navbar { background: var(--primary); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .navbar-title { font-size: 1.2rem; font-weight: bold; }
+    .navbar-right { display: flex; align-items: center; gap: 1rem; }
+    .user-badge { font-size: 0.85rem; color: rgba(255,255,255,0.8); }
+    .logout-btn { background: transparent; border: 1px solid white; color: white; padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; }
+    .logout-btn:hover { background: white; color: var(--primary); }
+    .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
+    .card { background: var(--card); border-radius: var(--radius); padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .card h2 { margin-top: 0; margin-bottom: 1.5rem; font-size: 1.3rem; color: var(--primary); border-bottom: 2px solid var(--bg); padding-bottom: 0.5rem; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
+    input, textarea, select { width: 100%; padding: 0.75rem; border: 1px solid #ccc; border-radius: var(--radius); box-sizing: border-box; font-family: inherit; font-size: 1rem; }
+    button { background: var(--accent); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: var(--radius); cursor: pointer; font-size: 1rem; font-weight: 600; }
+    button:hover { background: #2980b9; }
+    .btn-secondary { background: var(--primary); }
+    .btn-secondary:hover { background: #1a252f; }
+    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; color: white; }
+    .status-open { background: var(--warning); }
+    .status-resolved { background: var(--success); }
+    .status-other { background: var(--danger); }
+    .priority-badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; color: white; text-transform: uppercase; }
+    .priority-low { background: var(--success); }
+    .priority-medium { background: var(--warning); }
+    .priority-high { background: var(--danger); }
+    .result-box { margin-top: 1rem; padding: 1rem; background: var(--bg); border-radius: var(--radius); border-left: 4px solid var(--accent); }
+    .hidden { display: none !important; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f9f9f9; font-weight: 600; }
+    .history-table { font-size: 0.9rem; }
+    .history-table th { background: #f0f0f0; }
+    .stats-grid { display: flex; gap: 1rem; margin-top: 1rem; }
+    .stat-card { flex: 1; background: var(--bg); padding: 1.5rem; border-radius: var(--radius); text-align: center; border: 1px solid #eee; }
+    .stat-value { font-size: 2.5rem; font-weight: bold; color: var(--primary); margin: 0.5rem 0; }
+    .stat-label { color: var(--muted); font-size: 0.9rem; text-transform: uppercase; }
+    .ticket-row { cursor: pointer; }
+    .ticket-row:hover td { background: #f5f9ff; }
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: var(--primary); color: white; padding: 1rem; border-radius: var(--radius); box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 250px; animation: slideIn 0.3s forwards, fadeOut 0.3s forwards 2.7s; }
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--danger); }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; } }
+
+    /* Login page */
+    #page-login { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: var(--bg); }
+    .login-card { background: var(--card); border-radius: var(--radius); padding: 2.5rem; box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
+    .login-card h1 { margin: 0 0 0.25rem; font-size: 1.6rem; color: var(--primary); }
+    .login-card .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+    .tab-row { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid var(--bg); }
+    .tab-btn { flex: 1; background: none; border: none; padding: 0.6rem; font-size: 0.95rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-btn:hover { background: none; color: var(--accent); }
+    .error-msg { color: var(--danger); font-size: 0.85rem; margin-top: 0.5rem; min-height: 1.2rem; }
+    .badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; font-weight: bold; }
+    .badge-development { background: var(--success); color: white; }
+    .badge-testing { background: var(--warning); color: white; }
+    .badge-production { background: var(--danger); color: white; }
+    .admin-label { font-size: 0.75rem; background: var(--danger); color: white; padding: 2px 8px; border-radius: 12px; font-weight: bold; text-transform: uppercase; }
+
+    /* Show/Hide Password Wrapper Styles */
+    .password-wrapper { position: relative; display: flex; align-items: center; }
+    .password-wrapper input { padding-right: 2.5rem; }
+    .eye-btn { position: absolute; right: 5px; background: transparent; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); padding: 0 8px; display: flex; align-items: center; height: 100%; transition: color 0.2s; width: auto;}
+    .eye-btn:hover { background: transparent; color: var(--primary); }
+    .required-star { color: var(--danger); margin-left: 3px; }
+  </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div id="page-login">
+  <div class="login-card">
+    <h1>Support System</h1>
+    <p class="subtitle">Customer Ticketing Platform</p>
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-login" onclick="showTab('login')">Login</button>
+      <button class="tab-btn" id="tab-register" onclick="showTab('register')">Register</button>
+    </div>
+
+    <div id="form-login">
+      <div class="form-group"><label>Username</label><input type="text" id="login-user" placeholder="Username"></div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="login-pass" placeholder="Password">
+          <button type="button" class="eye-btn" onclick="togglePassword('login-pass', this)" title="Show/Hide Password">👁️</button>
+        </div>
+      </div>
+      <button onclick="doLogin()" style="width:100%">Login</button>
+      <div class="error-msg" id="login-err"></div>
+    </div>
+
+    <div id="form-register" class="hidden">
+      <div class="form-group"><label>Username</label><input type="text" id="reg-user" placeholder="Choose a username"></div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="reg-pass" placeholder="Choose a password">
+          <button type="button" class="eye-btn" onclick="togglePassword('reg-pass', this)" title="Show/Hide Password">👁️</button>
+        </div>
+      </div>
+      <button onclick="doRegister()" style="width:100%">Register</button>
+      <div class="error-msg" id="reg-err"></div>
+    </div>
+  </div>
+</div>
+
+<div id="navbar" class="navbar hidden">
+  <div class="navbar-title">Customer Support System <span class="badge" id="env-badge"></span></div>
+  <div class="navbar-right">
+    <span class="user-badge" id="navbar-user"></span>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </div>
+</div>
+
+<div id="page-user" class="hidden">
+  <div class="container">
+    <div class="card">
+      <h2>Submit Ticket</h2>
+      <div class="form-group"><label>Subject<span class="required-star">*</span></label><input type="text" id="t_subject" placeholder="Ticket Subject" required></div>
+      <div class="form-group"><label>Description<span class="required-star">*</span></label><textarea id="t_description" rows="4" placeholder="Describe your issue..." required></textarea></div>
+      <button onclick="submitTicket()">Submit Ticket</button>
+      <div id="t_res" class="result-box hidden"></div>
+    </div>
+    <div class="card">
+      <h2>My Tickets</h2>
+      <button onclick="loadMyTickets()">Refresh</button>
+      <div id="my_tickets" class="hidden" style="margin-top:1rem;"></div>
+    </div>
+    <div id="ticket-detail-card" class="card hidden">
+      <h2>Ticket Detail</h2>
+      <div id="ticket-detail-body"></div>
+      <div id="ticket-history-wrap" class="hidden" style="margin-top:1.5rem;">
+        <strong style="color:var(--primary)">Interaction History</strong>
+        <div id="ticket-history-body"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>My Notifications</h2>
+      <button onclick="loadMyNotifications()">Load</button>
+      <div id="n_res" class="hidden"></div>
+    </div>
+  </div>
+</div>
+
+<div id="page-admin" class="hidden">
+  <div class="container">
+    
+    <div class="card">
+      <h2>All System Tickets</h2>
+      <button onclick="loadAllTickets()">Load All Tickets</button>
+      <div id="all_tickets_res" class="hidden" style="margin-top:1rem;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Submit Support Response</h2>
+      <div class="form-group"><label>Ticket ID<span class="required-star">*</span></label><input type="text" id="s_ticket_id" placeholder="Ticket ID" required></div>
+      <div class="form-group"><label>Response<span class="required-star">*</span></label><textarea id="s_response" rows="4" placeholder="Type response here..." required></textarea></div>
+      <div class="form-group"><label>New Status</label><select id="s_new_status"><option value="OPEN">OPEN</option><option value="IN_PROGRESS">IN_PROGRESS</option><option value="RESOLVED">RESOLVED</option></select></div>
+      <div class="form-group"><label>New Priority</label><select id="s_new_priority"><option value="">Keep Current</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+      <button onclick="submitSupport()">Submit Response</button>
+      <div id="s_res" class="result-box hidden"></div>
+    </div>
+    
+    <div class="card">
+      <h2>Full Notifications Log</h2>
+      <button onclick="loadAllNotifications()">Load All</button>
+      <div id="a_n_res" class="hidden"></div>
+    </div>
+    
+    <div class="card">
+      <h2>Metrics Dashboard</h2>
+      <button onclick="getMetrics()">Refresh Metrics</button>
+      <div id="m_res" class="stats-grid hidden"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const host = window.location.hostname;
+  const port = window.location.port;
+  let baseUrl, supportUrl, reportingUrl, notificationUrl, currentEnv;
+
+  if (host === 'localhost' || host === '127.0.0.1') {
+    if (port === '3001') {
+      currentEnv = "testing";
+      baseUrl = `http://${host}:5010`;
+      supportUrl = `http://${host}:5011`;
+      reportingUrl = `http://${host}:5012`;
+      notificationUrl = `http://${host}:5013`;
+    } else if (port === '8080' || port === '80' || port === '') {
+      currentEnv = "production";
+      baseUrl = `http://${host}:5020`;
+      supportUrl = `http://${host}:5021`;
+      reportingUrl = `http://${host}:5022`;
+      notificationUrl = `http://${host}:5023`;
+    } else {
+      currentEnv = "development";
+      baseUrl = `http://${host}:5000`;
+      supportUrl = `http://${host}:5001`;
+      reportingUrl = `http://${host}:5002`;
+      notificationUrl = `http://${host}:5003`;
+    }
+  } else {
+    currentEnv = "development";
+    baseUrl = `http://${host}:30000`;
+    supportUrl = `http://${host}:30001`;
+    reportingUrl = `http://${host}:30002`;
+    notificationUrl = `http://${host}:30003`;
+  }
+
+  function getToken() { return localStorage.getItem("token"); }
+  function getRole() { return localStorage.getItem("role"); }
+  function getUser() { return localStorage.getItem("user_id"); }
+
+  function authHeader() { return { "Authorization": "Bearer " + getToken(), "Content-Type": "application/json" }; }
+
+  function showToast(message, isError) {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast ' + (isError ? 'error' : 'success');
+    t.innerText = message;
+    c.appendChild(t);
+    setTimeout(() => { if (c.contains(t)) c.removeChild(t); }, 3000);
+  }
+
+  function getStatusClass(s) {
+    if (!s) return 'status-other';
+    s = s.toUpperCase();
+    if (s === 'RESOLVED') return 'status-resolved';
+    if (s === 'OPEN') return 'status-open';
+    return 'status-other';
+  }
+
+  function getPriorityClass(p) {
+    if (!p) return 'priority-low';
+    p = p.toLowerCase();
+    if (p === 'high') return 'priority-high';
+    if (p === 'medium') return 'priority-medium';
+    return 'priority-low';
+  }
+
+  function showTab(tab) {
+    document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+    document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  }
+
+  function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.innerText = '🙈';
+    } else {
+      input.type = 'password';
+      btn.innerText = '👁️';
+    }
+  }
+
+  function showPage(role) {
+    document.getElementById('page-login').classList.add('hidden');
+    document.getElementById('navbar').classList.remove('hidden');
+    const badge = document.getElementById('env-badge');
+    badge.innerText = currentEnv;
+    badge.className = 'badge badge-' + currentEnv;
+    const userSpan = document.getElementById('navbar-user');
+    if (role === 'admin') {
+      userSpan.innerHTML = 'Logged in as <strong>admin</strong> <span class="admin-label">Admin</span>';
+      document.getElementById('page-admin').classList.remove('hidden');
+      loadAllTickets();
+    } else {
+      userSpan.innerText = 'Logged in as ' + getUser();
+      document.getElementById('page-user').classList.remove('hidden');
+      loadMyTickets();
+    }
+  }
+
+  function doLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user_id");
+    
+    document.getElementById('navbar').classList.add('hidden');
+    document.getElementById('page-user').classList.add('hidden');
+    document.getElementById('page-admin').classList.add('hidden');
+    document.getElementById('page-login').classList.remove('hidden');
+    
+    document.getElementById('login-err').innerText = '';
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-pass').type = 'password';
+    
+    document.getElementById('reg-err').innerText = '';
+    document.getElementById('reg-user').value = '';
+    document.getElementById('reg-pass').value = '';
+    document.getElementById('reg-pass').type = 'password';
+    
+    document.querySelectorAll('.eye-btn').forEach(btn => btn.innerText = '👁️');
+
+    document.getElementById('ticket-detail-card').classList.add('hidden');
+    document.getElementById('ticket-detail-body').innerHTML = '';
+    document.getElementById('ticket-history-wrap').classList.add('hidden');
+    document.getElementById('ticket-history-body').innerHTML = '';
+    document.getElementById('t_subject').value = '';
+    document.getElementById('t_description').value = '';
+    document.getElementById('t_res').classList.add('hidden');
+    document.getElementById('my_tickets').classList.add('hidden');
+    document.getElementById('my_tickets').innerHTML = '';
+    document.getElementById('n_res').classList.add('hidden');
+    document.getElementById('n_res').innerHTML = '';
+    
+    document.getElementById('all_tickets_res').classList.add('hidden');
+    document.getElementById('all_tickets_res').innerHTML = '';
+  }
+
+  async function doLogin() {
+    const user_id = document.getElementById('login-user').value.trim();
+    const password = document.getElementById('login-pass').value;
+    document.getElementById('login-err').innerText = '';
+    const res = await fetch(baseUrl + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id, password }) });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('login-err').innerText = data.error || 'Login failed'; return; }
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("role", data.role);
+    localStorage.setItem("user_id", data.user_id);
+    showPage(data.role);
+  }
+
+  async function doRegister() {
+    const user_id = document.getElementById('reg-user').value.trim();
+    const password = document.getElementById('reg-pass').value;
+    document.getElementById('reg-err').innerText = '';
+    if (!user_id || !password) { document.getElementById('reg-err').innerText = 'Fill in all fields'; return; }
+    const res = await fetch(baseUrl + '/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id, password }) });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('reg-err').innerText = data.error || 'Registration failed'; return; }
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("role", data.role);
+    localStorage.setItem("user_id", data.user_id);
+    showPage(data.role);
+  }
+
+  async function submitTicket() {
+    const subject = document.getElementById('t_subject').value.trim();
+    const description = document.getElementById('t_description').value.trim();
+    
+    if (!subject || !description) {
+      showToast('Please fill in both Subject and Description', true);
+      return;
+    }
+
+    const res = await fetch(baseUrl + '/tickets', { method: 'POST', headers: authHeader(), body: JSON.stringify({ subject, description }) });
+    if (res.status === 401) { doLogout(); return; }
+    const result = await res.json();
+    const box = document.getElementById('t_res');
+    box.classList.remove('hidden');
+    box.innerHTML = '<strong>Ticket #' + result.ticket_id + ' created.</strong><br>Status: <span class="status-badge ' + getStatusClass(result.status) + '">' + result.status + '</span>';
+    showToast('Ticket submitted');
+    
+    document.getElementById('t_subject').value = '';
+    document.getElementById('t_description').value = '';
+    
+    loadMyTickets();
+  }
+
+  async function loadMyTickets() {
+    const res = await fetch(baseUrl + '/tickets/user/me', { headers: authHeader() });
+    if (res.status === 401) { doLogout(); return; }
+    const tickets = await res.json();
+    const box = document.getElementById('my_tickets');
+    box.classList.remove('hidden');
+    if (tickets.length === 0) { box.innerHTML = '<p style="color:var(--muted)">No tickets yet.</p>'; return; }
+    let html = '<table><tr><th>ID</th><th>Subject</th><th>Status</th><th>Priority</th></tr>';
+    for (let i = 0; i < tickets.length; i++) {
+      const t = tickets[i];
+      html += '<tr class="ticket-row" onclick="openTicket(\'' + t.ticket_id + '\')"><td>#' + t.ticket_id + '</td><td>' + t.subject + '</td><td><span class="status-badge ' + getStatusClass(t.status) + '">' + t.status + '</span></td><td><span class="priority-badge ' + getPriorityClass(t.priority) + '">' + (t.priority || 'low') + '</span></td></tr>';
+    }
+    html += '</table>';
+    box.innerHTML = html;
+  }
+
+  async function loadAllTickets() {
+    const res = await fetch(baseUrl + '/tickets', { headers: authHeader() });
+    if (res.status === 401 || res.status === 403) { showToast('Access denied', true); return; }
+    const tickets = await res.json();
+    const box = document.getElementById('all_tickets_res');
+    box.classList.remove('hidden');
+    if (tickets.length === 0) { box.innerHTML = '<p style="color:var(--muted)">No tickets found in the system.</p>'; return; }
+
+    let html = '<table><tr><th>ID</th><th>Username</th><th>Description</th><th>Status</th><th>Priority</th></tr>';
+    for (let i = 0; i < tickets.length; i++) {
+      const t = tickets[i];
+      html += '<tr class="ticket-row" onclick="openTicket(\'' + t.ticket_id + '\')">' +
+              '<td>#' + t.ticket_id + '</td>' +
+              '<td>' + t.user_id + '</td>' +
+              '<td>' + t.description + '</td>' +
+              '<td><span class="status-badge ' + getStatusClass(t.status) + '">' + t.status + '</span></td>' +
+              '<td><span class="priority-badge ' + getPriorityClass(t.priority) + '">' + (t.priority || 'low') + '</span></td></tr>';
+    }
+    html += '</table>';
+    box.innerHTML = html;
+  }
+
+  async function openTicket(id) {
+    const res = await fetch(baseUrl + '/tickets/' + id, { headers: authHeader() });
+    if (res.status === 401) { doLogout(); return; }
+    if (res.status === 403) { showToast('Access denied', true); return; }
+    const t = await res.json();
+    
+    // Check if admin is viewing this to auto-fill the response box
+    if (getRole() === 'admin') {
+      document.getElementById('s_ticket_id').value = t.ticket_id;
+    }
+
+    const card = document.getElementById('ticket-detail-card');
+    const body = document.getElementById('ticket-detail-body');
+    
+    // Show the detail card in the correct container based on role
+    if (getRole() === 'admin') {
+      document.getElementById('page-admin').querySelector('.container').insertBefore(card, document.getElementById('a_n_res').parentElement);
+    } else {
+      document.getElementById('page-user').querySelector('.container').appendChild(card);
+    }
+    
+    card.classList.remove('hidden');
+    body.innerHTML = '<strong>Ticket ID:</strong> ' + t.ticket_id + '<br><strong>Subject:</strong> ' + t.subject + '<br><strong>Description:</strong> ' + t.description + '<br><strong>Status:</strong> <span class="status-badge ' + getStatusClass(t.status) + '">' + t.status + '</span> <strong>Priority:</strong> <span class="priority-badge ' + getPriorityClass(t.priority) + '">' + (t.priority || 'low') + '</span>';
+    
+    const hRes = await fetch(supportUrl + '/support/' + id, { headers: authHeader() });
+    const history = await hRes.json();
+    const wrap = document.getElementById('ticket-history-wrap');
+    const hBody = document.getElementById('ticket-history-body');
+    wrap.classList.remove('hidden');
+    if (history.length === 0) { hBody.innerHTML = '<p style="color:var(--muted);margin-top:0.5rem;">No interactions yet.</p>'; return; }
+    let html = '<table class="history-table"><tr><th>#</th><th>Agent</th><th>Response</th><th>Status</th><th>Time</th></tr>';
+    for (let i = 0; i < history.length; i++) {
+      const h = history[i];
+      const ts = h.timestamp ? new Date(h.timestamp * 1000).toLocaleString() : 'N/A';
+      html += '<tr><td>' + (i + 1) + '</td><td>' + h.agent_id + '</td><td>' + h.response + '</td><td><span class="status-badge ' + getStatusClass(h.status) + '">' + h.status + '</span></td><td>' + ts + '</td></tr>';
+    }
+    html += '</table>';
+    hBody.innerHTML = html;
+    card.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  async function loadMyNotifications() {
+    const userId = getUser();
+    const res = await fetch(notificationUrl + '/notifications/user/' + userId, { headers: authHeader() });
+    if (res.status === 401) { doLogout(); return; }
+    const result = await res.json();
+    const box = document.getElementById('n_res');
+    box.classList.remove('hidden');
+    if (result.length === 0) { box.innerHTML = '<div class="result-box">No notifications.</div>'; return; }
+    
+    let html = '<table><tr><th>#</th><th>Message</th><th>Ticket Status</th><th>Message Status</th></tr>';
+    
+    result.forEach(n => { 
+      let ticketId = "-";
+      let ticketStatus = "-";
+      let actualMsg = n.message;
+
+      const match = n.message.match(/Ticket #([a-zA-Z0-9]+) \[([A-Z_]+)\]:\s*(.*)/);
+      if (match) {
+        ticketId = match[1];
+        ticketStatus = match[2];
+        actualMsg = match[3];
+      }
+
+      html += '<tr>' +
+                '<td>' + ticketId + '</td>' +
+                '<td>' + actualMsg + '</td>' +
+                '<td>' + (ticketStatus !== "-" ? '<span class="status-badge ' + getStatusClass(ticketStatus) + '">' + ticketStatus + '</span>' : '-') + '</td>' +
+                '<td><span class="status-badge status-other">' + n.status + '</span></td>' +
+              '</tr>'; 
+    });
+    html += '</table>';
+    box.innerHTML = html;
+  }
+
+  async function submitSupport() {
+    const ticket_id = document.getElementById('s_ticket_id').value.trim();
+    const response = document.getElementById('s_response').value.trim();
+    const new_status = document.getElementById('s_new_status').value;
+    const new_priority = document.getElementById('s_new_priority').value;
+
+    if (!ticket_id || !response) {
+      showToast('Please fill in both Ticket ID and Response', true);
+      return;
+    }
+
+    const res = await fetch(supportUrl + '/support', { method: 'POST', headers: authHeader(), body: JSON.stringify({ ticket_id, response, new_status, new_priority }) });
+    if (res.status === 401 || res.status === 403) { showToast('Access denied', true); return; }
+    const result = await res.json();
+    const box = document.getElementById('s_res');
+    box.classList.remove('hidden');
+    box.innerHTML = '<strong>Response submitted for Ticket #' + result.interaction_id + '.</strong><br>Status: <span class="status-badge ' + getStatusClass(result.status) + '">' + result.status + '</span>';
+    showToast('Response submitted');
+    
+    document.getElementById('s_ticket_id').value = '';
+    document.getElementById('s_response').value = '';
+    
+    loadAllTickets();
+  }
+
+  async function getMetrics() {
+    const res = await fetch(reportingUrl + '/metrics', { headers: authHeader() });
+    const result = await res.json();
+    const box = document.getElementById('m_res');
+    box.classList.remove('hidden');
+    box.innerHTML = '<div class="stat-card"><div class="stat-label">Total Tickets</div><div class="stat-value">' + result.total_tickets + '</div></div><div class="stat-card"><div class="stat-label">Avg Resolution Time</div><div class="stat-value">' + parseFloat(result.average_resolution_time).toFixed(1) + 'm</div></div>';
+  }
+
+  async function loadAllNotifications() {
+    const res = await fetch(notificationUrl + '/notifications', { headers: authHeader() });
+    const result = await res.json();
+    const box = document.getElementById('a_n_res');
+    box.classList.remove('hidden');
+    if (result.length === 0) { box.innerHTML = '<div class="result-box">No notifications.</div>'; return; }
+    
+    let html = '<table><tr><th>User ID</th><th>#</th><th>Message</th><th>Ticket Status</th><th>Message Status</th></tr>';
+    
+    result.forEach(n => { 
+      let ticketId = "-";
+      let ticketStatus = "-";
+      let actualMsg = n.message;
+
+      const match = n.message.match(/Ticket #([a-zA-Z0-9]+) \[([A-Z_]+)\]:\s*(.*)/);
+      if (match) {
+        ticketId = match[1];
+        ticketStatus = match[2];
+        actualMsg = match[3];
+      }
+
+      html += '<tr>' +
+                '<td>' + n.user_id + '</td>' +
+                '<td>' + ticketId + '</td>' +
+                '<td>' + actualMsg + '</td>' +
+                '<td>' + (ticketStatus !== "-" ? '<span class="status-badge ' + getStatusClass(ticketStatus) + '">' + ticketStatus + '</span>' : '-') + '</td>' +
+                '<td><span class="status-badge status-other">' + n.status + '</span></td>' +
+              '</tr>'; 
+    });
+    html += '</table>';
+    box.innerHTML = html;
+  }
+
+  if (getToken() && getRole()) {
+    showPage(getRole());
+  }
+</script>
+</body>
+</html>

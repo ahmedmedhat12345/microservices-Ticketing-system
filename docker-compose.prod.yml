@@ -1,0 +1,62 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    environment:
+      - ENV=production
+      - TICKET_URL=http://localhost:5020
+      - SUPPORT_URL=http://localhost:5021
+      - REPORTING_URL=http://localhost:5022
+      - NOTIFICATION_URL=http://localhost:5023
+    restart: always
+
+  ticket-service:
+    build: ./ticket_service
+    ports:
+      - "5020:5000"
+    environment:
+      - ENV=production
+    restart: always
+    volumes:
+      - ticket_data_prod:/data
+
+  support-service:
+    build: ./support_service
+    ports:
+      - "5021:5001"
+    environment:
+      - ENV=production
+    restart: always
+    volumes:
+      - support_data_prod:/data
+    depends_on:
+      - ticket-service
+      - reporting-service
+      - notification-service
+
+  reporting-service:
+    build: ./reporting_service
+    ports:
+      - "5022:5002"
+    environment:
+      - ENV=production
+    restart: always
+    volumes:
+      - reporting_data_prod:/data
+
+  notification-service:
+    build: ./notification_service
+    ports:
+      - "5023:5003"
+    environment:
+      - ENV=production
+    restart: always
+    volumes:
+      - notification_data_prod:/data
+
+volumes:
+  ticket_data_prod:
+  support_data_prod:
+  reporting_data_prod:
+  notification_data_prod:

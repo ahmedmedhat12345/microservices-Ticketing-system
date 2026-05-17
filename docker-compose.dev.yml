@@ -1,0 +1,57 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    environment:
+      - ENV=development
+    depends_on:
+      - ticket-service
+      - support-service
+      - reporting-service
+
+  ticket-service:
+    build: ./ticket_service
+    ports:
+      - "5000:5000"
+    environment:
+      - ENV=development
+    volumes:
+      - ticket_data:/data
+
+  support-service:
+    build: ./support_service
+    ports:
+      - "5001:5001"
+    environment:
+      - ENV=development
+    volumes:
+      - support_data:/data
+    depends_on:
+      - ticket-service
+      - reporting-service
+      - notification-service
+
+  reporting-service:
+    build: ./reporting_service
+    ports:
+      - "5002:5002"
+    environment:
+      - ENV=development
+    volumes:
+      - reporting_data:/data
+
+  notification-service:
+    build: ./notification_service
+    ports:
+      - "5003:5003"
+    environment:
+      - ENV=development
+    volumes:
+      - notification_data:/data
+
+volumes:
+  ticket_data:
+  support_data:
+  reporting_data:
+  notification_data:
